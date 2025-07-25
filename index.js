@@ -6,10 +6,7 @@ const jwt = require("jsonwebtoken");
 const app = express()
 const port = process.env.PORT || 5000
 
-app.use(cors({
-  origin : ['http://localhost:5173'],
-  credentials : true
-}));
+app.use(cors());
 app.use(express.json())
 app.use(cookieParser())
 
@@ -45,6 +42,7 @@ async function run() {
       res.send({ token })
      })
 
+     // middleware -------------------------
     //  verify token ---------
     const verifyToken = (req, res, next) => {
       console.log('inside verify token', req.headers.authorization);
@@ -61,6 +59,7 @@ async function run() {
       })
     }
 
+
     // use verifyAdmin after verifyToken ------------
     const verifyAdmin = async(req, res, next) => {
       const email = req.decoded.email;
@@ -72,6 +71,7 @@ async function run() {
       }
       next()
     }
+
 
     //  users api ----------------
     app.post("/users", async (req, res) => {
@@ -129,6 +129,48 @@ async function run() {
         const result = await menuCollection.find().toArray()
         res.send(result)
     })
+
+    
+    app.get('/menu/:id', async(req, res)=> {
+       const id = req.params.id;
+        const query = {_id : new ObjectId(id)}
+        const result = await menuCollection.findOne(query)
+        res.send(result)
+    })
+
+
+
+    app.post('/menu', verifyToken, verifyAdmin, async(req, res)=> {
+        const item = req.body;
+        const result = await menuCollection.insertOne(item)
+        res.send(result)
+    })
+
+    app.delete('/menu/:id', verifyToken, verifyAdmin, async(req, res)=>{
+      const id = req.params.id;
+      const query = { _id : new ObjectId(id)}
+      const result = await menuCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    app.patch("/menu/:id", async (req, res) => {
+      const item = req.body;
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          recipe: item.recipe,
+          image: item.image,
+        },
+      };
+      const result = await menuCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+ 
 
     // review api ----------------
     app.get('/reviews', async(req, res)=> {
